@@ -15,11 +15,11 @@
   "item.build_utils.creative_wand.tooltip.pos1": "First position: %s",
   "item.build_utils.creative_wand.tooltip.pos2": "Second position: %s",
   "item.build_utils.creative_wand.tooltip.blockstate": "Block state: %s",
+  "item.build_utils.creative_wand.feedback.filling_sub_zone": "%s -> %s",
+  "item.build_utils.creative_wand.feedback.total_filled_volume": "Total number of filled blocks: %d",
   "item.build_utils.creative_wand.action_bar.pos1_selected": "Selected first position: %s",
   "item.build_utils.creative_wand.action_bar.pos2_selected": "Selected second position: %s",
   "item.build_utils.creative_wand.action_bar.blockstate_selected": "Selected block state: %s",
-  "item.build_utils.creative_wand.feedback.filled_area": "Filled area with %d %s block(s).",
-  "item.build_utils.creative_wand.action_bar.error.too_many_blocks": "Too many blocks in the specified volume (%d > %d)!",
   "item.build_utils.creative_wand.action_bar.error.permissions": "Unsufficient permissions!",
   "item.build_utils.creative_wand.action_bar.error.cannot_fill": "Cannot fill area!",
 

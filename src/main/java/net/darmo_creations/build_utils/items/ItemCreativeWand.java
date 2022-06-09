@@ -22,6 +22,7 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.List;
 
@@ -34,6 +35,8 @@ import java.util.List;
  * <li>Sneak-right-click on a block to select it as filler. If no block is targetted, air will be selected.
  */
 public class ItemCreativeWand extends Item {
+  private static final int SUBPART_SIZE = 32;
+
   private static final String POS1_TAG_KEY = "Pos1";
   private static final String POS2_TAG_KEY = "Pos2";
   private static final String STATE_TAG_KEY = "BlockState";
@@ -42,39 +45,109 @@ public class ItemCreativeWand extends Item {
     super(settings.maxCount(1));
   }
 
-  // TODO allow more than 32768 blocks
   @Override
   public TypedActionResult<ItemStack> use(World world, PlayerEntity player, Hand hand) {
     ItemStack heldItem = player.getStackInHand(hand);
-    WandData data = WandData.fromTag(heldItem.getNbt());
     ActionResult result;
-    if (player.isSneaking()) {
-      setBlockState(Blocks.AIR.getDefaultState(), data, world, player);
-      heldItem.setNbt(data.toTag());
-      result = ActionResult.SUCCESS;
-    } else if (data.isReady()) {
-      if (world instanceof ServerWorld w) {
-        String command = "fill %s %s %s".formatted(
-            Utils.blockPosToString(data.firstPosition),
-            Utils.blockPosToString(data.secondPosition),
-            Utils.blockStateToString(data.blockState)
-        );
-        int blocksFilled;
-        try {
-          blocksFilled = w.getServer().getCommandManager().getDispatcher().execute(command, player.getCommandSource());
-        } catch (CommandSyntaxException e) {
-          Utils.sendMessage(world, player, new LiteralText(e.getMessage())
-              .setStyle(Style.EMPTY.withColor(Formatting.RED)), false);
-          return new TypedActionResult<>(ActionResult.FAIL, heldItem);
-        }
-      }
-      result = ActionResult.SUCCESS;
-    } else {
-      Utils.sendMessage(world, player, new TranslatableText("item.build_utils.creative_wand.action_bar.error.cannot_fill")
-          .setStyle(Style.EMPTY.withColor(Formatting.RED)), true);
+
+    if (!player.isCreativeLevelTwoOp()) {
+      Utils.sendMessage(world, player, new TranslatableText(
+          "item.build_utils.creative_wand.action_bar.error.permissions"
+      ).setStyle(Style.EMPTY.withColor(Formatting.RED)), true);
       result = ActionResult.FAIL;
+    } else {
+      WandData data = WandData.fromTag(heldItem.getNbt());
+      if (player.isSneaking()) {
+        setBlockState(Blocks.AIR.getDefaultState(), data, world, player);
+        heldItem.setNbt(data.toTag());
+        result = ActionResult.SUCCESS;
+      } else if (data.isReady()) {
+        if (world instanceof ServerWorld w) {
+          this.fill(player, data, w);
+        }
+        result = ActionResult.SUCCESS;
+      } else {
+        Utils.sendMessage(world, player,
+            new TranslatableText("item.build_utils.creative_wand.action_bar.error.cannot_fill")
+                .setStyle(Style.EMPTY.withColor(Formatting.RED)), true);
+        result = ActionResult.FAIL;
+      }
     }
+
     return new TypedActionResult<>(result, heldItem);
+  }
+
+  /**
+   * Fills the area selected by the given wand data.
+   *
+   * @param player The player holding the item.
+   * @param data   Wand data.
+   * @param world  The world to edit.
+   */
+  private void fill(PlayerEntity player, WandData data, ServerWorld world) {
+    Pair<BlockPos, BlockPos> positions = Utils.normalizePositions(data.firstPosition, data.secondPosition);
+    final BlockPos pos1 = positions.getLeft();
+    final BlockPos pos2 = positions.getRight();
+    final BlockPos size = pos2.subtract(pos1).add(1, 1, 1);
+    int blocksNb = 0;
+    int x = 0, y, z;
+    while (x < size.getX()) {
+      y = 0;
+      while (y < size.getY()) {
+        z = 0;
+        while (z < size.getZ()) {
+          blocksNb += this.fillSubPart(
+              pos1.add(x, y, z),
+              pos1.add(
+                  Math.min(x + SUBPART_SIZE, size.getX()) - 1,
+                  Math.min(y + SUBPART_SIZE, size.getY()) - 1,
+                  Math.min(z + SUBPART_SIZE, size.getZ()) - 1
+              ),
+              data.blockState,
+              world,
+              player
+          );
+          z += SUBPART_SIZE;
+        }
+        y += SUBPART_SIZE;
+      }
+      x += SUBPART_SIZE;
+    }
+    Utils.sendMessage(world, player,
+        new TranslatableText("item.build_utils.creative_wand.feedback.total_filled_volume", blocksNb),
+        false);
+  }
+
+  /**
+   * Fills the area between the two positions.
+   * Action is delegated to the /fill command.
+   *
+   * @param pos1       First position.
+   * @param pos2       Second position.
+   * @param blockState Block state to use as filler.
+   * @param world      The world to edit.
+   * @param player     The player holding the item.
+   * @return The number of filled blocks.
+   */
+  private int fillSubPart(BlockPos pos1, BlockPos pos2, BlockState blockState, ServerWorld world, PlayerEntity player) {
+    Utils.sendMessage(world, player,
+        new TranslatableText("item.build_utils.creative_wand.feedback.filling_sub_zone",
+            Utils.blockPosToString(pos1), Utils.blockPosToString(pos2)),
+        false);
+    String command = "fill %s %s %s".formatted(
+        Utils.blockPosToString(pos1),
+        Utils.blockPosToString(pos2),
+        Utils.blockStateToString(blockState)
+    );
+    int blocksFilled;
+    try {
+      blocksFilled = world.getServer().getCommandManager().getDispatcher().execute(command, player.getCommandSource());
+    } catch (CommandSyntaxException e) {
+      Utils.sendMessage(world, player, new LiteralText(e.getMessage())
+          .setStyle(Style.EMPTY.withColor(Formatting.RED)), false);
+      return 0;
+    }
+    return blocksFilled;
   }
 
   @Override
@@ -100,13 +173,13 @@ public class ItemCreativeWand extends Item {
         Utils.sendMessage(world, player, new TranslatableText(
             "item.build_utils.creative_wand.action_bar.pos1_selected",
             Utils.blockPosToString(pos)
-        ).setStyle(Style.EMPTY.withColor(Formatting.AQUA)), true);
+        ), true);
       } else {
         data.secondPosition = pos;
         Utils.sendMessage(world, player, new TranslatableText(
             "item.build_utils.creative_wand.action_bar.pos2_selected",
             Utils.blockPosToString(pos)
-        ).setStyle(Style.EMPTY.withColor(Formatting.DARK_AQUA)), true);
+        ), true);
       }
     }
 
@@ -144,7 +217,7 @@ public class ItemCreativeWand extends Item {
     Utils.sendMessage(world, player, new TranslatableText(
         "item.build_utils.creative_wand.action_bar.blockstate_selected",
         Utils.blockStateToString(blockState)
-    ).setStyle(Style.EMPTY.withColor(Formatting.BLUE)), true);
+    ), true);
   }
 
   /**
