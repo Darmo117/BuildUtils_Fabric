@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "id": "build_utils",
+  "version": "${version}",
+
+  "name": "BuildUtils",
+  "description": "Small mod that adds various tools to facilitate building things. Fabric version.",
+  "authors": [
+    "Darmo"
+  ],
+  "contact": {
+    "homepage": "http://www.darmo-creations.net",
+    "sources": "https://github.com/Darmo117/BuildUtils_Fabric"
+  },
+
+  "license": "GPL3",
+  "icon": "assets/build_utils/icon.png",
+
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "net.darmo_creations.build_utils.BuildUtils"
+    ],
+    "client": [
+      "net.darmo_creations.build_utils.ClientInitializer"
+    ]
+  },
+
+  "depends": {
+    "fabricloader": ">=0.14.6",
+    "fabric": "*",
+    "minecraft": "~1.18.2",
+    "java": ">=17"
+  },
+  "suggests": {
+    "another-mod": "*"
+  }
+}
