@@ -2,7 +2,7 @@ package net.darmo_creations.build_utils.blocks;
 
 import net.darmo_creations.build_utils.Utils;
 import net.darmo_creations.build_utils.block_entities.LaserTelemeterBlockEntity;
-import net.darmo_creations.build_utils.gui.GuiLaserTelemeter;
+import net.darmo_creations.build_utils.gui.LaserTelemeterScreen;
 import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
@@ -22,8 +22,8 @@ import java.util.Optional;
  *
  * @see LaserTelemeterBlockEntity
  */
-public class BlockLaserTelemeter extends BlockWithEntity {
-  public BlockLaserTelemeter() {
+public class LaserTelemeterBlock extends BlockWithEntity {
+  public LaserTelemeterBlock() {
     // Same settings as command block
     super(FabricBlockSettings
         .of(Material.METAL, MapColor.RED)
@@ -38,7 +38,7 @@ public class BlockLaserTelemeter extends BlockWithEntity {
     Optional<LaserTelemeterBlockEntity> be = Utils.getBlockEntity(LaserTelemeterBlockEntity.class, world, pos);
     if (be.isPresent() && player.isCreativeLevelTwoOp()) {
       if (world.isClient()) {
-        MinecraftClient.getInstance().setScreen(new GuiLaserTelemeter(be.get()));
+        MinecraftClient.getInstance().setScreen(new LaserTelemeterScreen(be.get()));
       }
       return ActionResult.SUCCESS;
     } else {

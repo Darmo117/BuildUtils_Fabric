@@ -1,7 +1,7 @@
 package net.darmo_creations.build_utils.block_entities.renderers;
 
 import net.darmo_creations.build_utils.block_entities.LaserTelemeterBlockEntity;
-import net.darmo_creations.build_utils.blocks.BlockLaserTelemeter;
+import net.darmo_creations.build_utils.blocks.LaserTelemeterBlock;
 import net.darmo_creations.build_utils.blocks.ModBlocks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.RenderLayer;
@@ -22,7 +22,7 @@ import java.util.Objects;
  * Renders the axes/box.
  *
  * @see LaserTelemeterBlockEntityRenderer
- * @see BlockLaserTelemeter
+ * @see LaserTelemeterBlock
  * @see ModBlocks#LASER_TELEMETER
  */
 public class LaserTelemeterBlockEntityRenderer implements BlockEntityRenderer<LaserTelemeterBlockEntity> {

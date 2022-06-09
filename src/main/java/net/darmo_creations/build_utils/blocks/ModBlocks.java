@@ -15,7 +15,7 @@ import javax.annotation.Nullable;
  */
 @SuppressWarnings("unused")
 public final class ModBlocks {
-  public static final Block LASER_TELEMETER = register("laser_telemeter", new BlockLaserTelemeter(), BuildUtils.ITEM_GROUP);
+  public static final Block LASER_TELEMETER = register("laser_telemeter", new LaserTelemeterBlock(), BuildUtils.ITEM_GROUP);
 
   /**
    * Registers a block and its item, and puts it in the given item group.

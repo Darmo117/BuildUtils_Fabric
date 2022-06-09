@@ -13,9 +13,9 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3i;
 
 /**
- * GUI for the laser telemeter block.
+ * Screen for the laser telemeter block.
  */
-public class GuiLaserTelemeter extends Screen {
+public class LaserTelemeterScreen extends Screen {
   // Layout
   private static final int TITLE_MARGIN = 30;
   private static final int MARGIN = 4;
@@ -40,7 +40,7 @@ public class GuiLaserTelemeter extends Screen {
    *
    * @param blockEntity The tile entity.
    */
-  public GuiLaserTelemeter(LaserTelemeterBlockEntity blockEntity) {
+  public LaserTelemeterScreen(LaserTelemeterBlockEntity blockEntity) {
     super(new TranslatableText("gui.build_utils.laser_telemeter.title"));
     this.blockEntity = blockEntity;
     this.size = blockEntity.getSize();

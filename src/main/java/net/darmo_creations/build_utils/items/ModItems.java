@@ -11,8 +11,8 @@ import net.minecraft.util.registry.Registry;
  */
 @SuppressWarnings("unused")
 public final class ModItems {
-  public static final Item RULER = register("ruler", new ItemRuler(new FabricItemSettings().group(BuildUtils.ITEM_GROUP)));
-  public static final Item CREATIVE_WAND = register("creative_wand", new ItemCreativeWand(new FabricItemSettings().group(BuildUtils.ITEM_GROUP)));
+  public static final Item RULER = register("ruler", new RulerItem(new FabricItemSettings().group(BuildUtils.ITEM_GROUP)));
+  public static final Item CREATIVE_WAND = register("creative_wand", new CreativeWandItem(new FabricItemSettings().group(BuildUtils.ITEM_GROUP)));
 
   /**
    * Registers an item.

@@ -34,14 +34,14 @@ import java.util.List;
  * <li>Right-click on another block to select the second position.
  * <li>Sneak-right-click on a block to select it as filler. If no block is targetted, air will be selected.
  */
-public class ItemCreativeWand extends Item {
+public class CreativeWandItem extends Item {
   private static final int SUBPART_SIZE = 32;
 
   private static final String POS1_TAG_KEY = "Pos1";
   private static final String POS2_TAG_KEY = "Pos2";
   private static final String STATE_TAG_KEY = "BlockState";
 
-  public ItemCreativeWand(Settings settings) {
+  public CreativeWandItem(Settings settings) {
     super(settings.maxCount(1));
   }
 

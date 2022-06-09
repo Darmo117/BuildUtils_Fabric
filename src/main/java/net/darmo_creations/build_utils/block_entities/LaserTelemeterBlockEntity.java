@@ -1,6 +1,6 @@
 package net.darmo_creations.build_utils.block_entities;
 
-import net.darmo_creations.build_utils.blocks.BlockLaserTelemeter;
+import net.darmo_creations.build_utils.blocks.LaserTelemeterBlock;
 import net.darmo_creations.build_utils.blocks.ModBlocks;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
@@ -17,7 +17,7 @@ import net.minecraft.util.math.Vec3i;
  * <p>
  * Negative values for length fields mean that the line should be drawn in the negative direction along its axis.
  *
- * @see BlockLaserTelemeter
+ * @see LaserTelemeterBlock
  * @see ModBlocks#LASER_TELEMETER
  */
 public class LaserTelemeterBlockEntity extends BlockEntity {

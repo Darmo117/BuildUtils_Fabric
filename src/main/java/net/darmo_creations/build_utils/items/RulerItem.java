@@ -23,10 +23,10 @@ import net.minecraft.world.World;
  * <li>Right-click on another block to select second position.
  * The size, areas and volume the selected 3D rectangle will appear in the chat.
  */
-public class ItemRuler extends Item {
+public class RulerItem extends Item {
   private static final String POS_TAG_KEY = "Pos";
 
-  public ItemRuler(Settings settings) {
+  public RulerItem(Settings settings) {
     super(settings.maxCount(1));
   }
 
