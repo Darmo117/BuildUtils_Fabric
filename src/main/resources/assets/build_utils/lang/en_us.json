@@ -2,6 +2,7 @@
   "itemGroup.build_utils.general": "Build Utils",
 
   "block.build_utils.laser_telemeter": "Laser Telemeter",
+  "block.build_utils.laser_telemeter.error.cannot_fill_area": "Cannot fill area!",
 
   "item.build_utils.ruler": "Ruler",
   "item.build_utils.ruler.action_bar.first_selection": "Selected first position: %s",
@@ -20,7 +21,6 @@
   "item.build_utils.creative_wand.action_bar.pos2_selected": "Selected second position: %s",
   "item.build_utils.creative_wand.action_bar.blockstate_selected": "Selected block state: %s",
   "item.build_utils.creative_wand.action_bar.error.permissions": "Unsufficient permissions!",
-  "item.build_utils.creative_wand.action_bar.error.cannot_fill": "Cannot fill area!",
 
   "gui.build_utils.laser_telemeter.title": "Laser Telemeter",
   "gui.build_utils.laser_telemeter.length_x_field.label": "Length X",

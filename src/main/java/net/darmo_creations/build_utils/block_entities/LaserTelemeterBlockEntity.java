@@ -77,12 +77,20 @@ public class LaserTelemeterBlockEntity extends BlockEntity {
   public void fillArea() {
     if (this.world instanceof ServerWorld w) {
       if (this.size.getX() != 0 && this.size.getY() != 0 && this.size.getZ() != 0 && this.fillerBlockState != null) {
-        int blocksNb = Utils.fill(this.pos.add(this.offset), this.pos.add(this.offset).add(this.size).add(-1, -1, -1), this.fillerBlockState, w);
+        int xo1 = this.size.getX() > 0 ? 0 : -1;
+        int yo1 = this.size.getY() > 0 ? 0 : -1;
+        int zo1 = this.size.getZ() > 0 ? 0 : -1;
+        int xo2 = this.size.getX() < 0 ? 0 : -1;
+        int yo2 = this.size.getY() < 0 ? 0 : -1;
+        int zo2 = this.size.getZ() < 0 ? 0 : -1;
+        BlockPos pos1 = this.pos.add(this.offset).add(xo1, yo1, zo1);
+        BlockPos pos2 = this.pos.add(this.offset).add(this.size).add(xo2, yo2, zo2);
+        int blocksNb = Utils.fill(pos1, pos2, this.fillerBlockState, w);
         w.getServer().getPlayerManager().broadcast(
             new TranslatableText("item.build_utils.creative_wand.feedback.total_filled_volume", blocksNb), MessageType.CHAT, Util.NIL_UUID);
       } else {
         w.getServer().getPlayerManager().broadcast(
-            new TranslatableText("item.build_utils.creative_wand.feedback.cannot_fill_area")
+            new TranslatableText("block.build_utils.laser_telemeter.error.cannot_fill_area")
                 .setStyle(Style.EMPTY.withColor(Formatting.RED)), MessageType.CHAT, Util.NIL_UUID);
       }
     }
