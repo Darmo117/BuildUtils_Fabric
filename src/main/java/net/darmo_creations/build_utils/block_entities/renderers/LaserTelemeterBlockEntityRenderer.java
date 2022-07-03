@@ -11,7 +11,6 @@ import net.minecraft.client.render.block.entity.BlockEntityRenderer;
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactory;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3i;
 
 import java.util.Objects;
@@ -35,7 +34,7 @@ public class LaserTelemeterBlockEntityRenderer implements BlockEntityRenderer<La
 
     if (player.isCreativeLevelTwoOp() || player.isSpectator()) {
       Vec3i size = be.getSize();
-      BlockPos offset = be.getOffset();
+      Vec3i offset = be.getOffset();
       int boxX1 = offset.getX();
       int boxY1 = offset.getY();
       int boxZ1 = offset.getZ();

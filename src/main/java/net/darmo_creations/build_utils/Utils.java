@@ -1,10 +1,18 @@
 package net.darmo_creations.build_utils;
 
+import com.mojang.brigadier.StringReader;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.command.argument.BlockArgumentParser;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.property.Property;
+import net.minecraft.text.LiteralText;
+import net.minecraft.text.Style;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3i;
 import net.minecraft.util.registry.Registry;
@@ -20,6 +28,8 @@ import java.util.stream.Collectors;
  * This class defines various utility functions.
  */
 public final class Utils {
+  private static final int SUBPART_SIZE = 32;
+
   /**
    * Returns the block entity of the given class at the given position.
    *
@@ -60,6 +70,20 @@ public final class Utils {
           .collect(Collectors.joining(",")) + "]";
     }
     return message;
+  }
+
+  /**
+   * Creates a block state object from the given string.
+   *
+   * @param s The string to deserialize.
+   * @return The corresponding block state object or null if the string is unparsable.
+   */
+  public static BlockState stringToBlockState(final String s) {
+    try {
+      return new BlockArgumentParser(new StringReader(s), false).parse(true).getBlockState();
+    } catch (CommandSyntaxException e) {
+      return null;
+    }
   }
 
   /**
@@ -135,6 +159,73 @@ public final class Utils {
         Math.max(pos1.getZ(), pos2.getZ())
     );
     return new ImmutablePair<>(posMin, posMax);
+  }
+
+  /**
+   * Fills the area between the specified positions.
+   *
+   * @param pos1  First region position.
+   * @param pos2  Second region position.
+   * @param world The world to edit.
+   * @return The number of blocks that were filled.
+   */
+  public static int fill(BlockPos pos1, BlockPos pos2, BlockState blockState, ServerWorld world) {
+    final Pair<BlockPos, BlockPos> positions = normalizePositions(pos1, pos2);
+    pos1 = positions.getLeft();
+    pos2 = positions.getRight();
+    final BlockPos size = pos2.subtract(pos1).add(1, 1, 1);
+    int blocksNb = 0;
+    int x = 0, y, z;
+    while (x < size.getX()) {
+      y = 0;
+      while (y < size.getY()) {
+        z = 0;
+        while (z < size.getZ()) {
+          blocksNb += fillSubPart(
+              pos1.add(x, y, z),
+              pos1.add(
+                  Math.min(x + SUBPART_SIZE, size.getX()) - 1,
+                  Math.min(y + SUBPART_SIZE, size.getY()) - 1,
+                  Math.min(z + SUBPART_SIZE, size.getZ()) - 1
+              ),
+              blockState,
+              world
+          );
+          z += SUBPART_SIZE;
+        }
+        y += SUBPART_SIZE;
+      }
+      x += SUBPART_SIZE;
+    }
+    return blocksNb;
+  }
+
+  /**
+   * Fills the area between the two positions.
+   * Action is delegated to the /fill command.
+   *
+   * @param pos1       First position.
+   * @param pos2       Second position.
+   * @param blockState Block state to use as filler.
+   * @param world      The world to edit.
+   * @return The number of filled blocks.
+   */
+  private static int fillSubPart(BlockPos pos1, BlockPos pos2, BlockState blockState, ServerWorld world) {
+    String command = "fill %s %s %s".formatted(
+        Utils.blockPosToString(pos1),
+        Utils.blockPosToString(pos2),
+        Utils.blockStateToString(blockState)
+    );
+    int blocksFilled;
+    try {
+      blocksFilled = world.getServer().getCommandManager().getDispatcher()
+          .execute(command, world.getServer().getCommandSource());
+    } catch (CommandSyntaxException e) {
+      world.getServer().sendSystemMessage(new LiteralText(e.getMessage())
+          .setStyle(Style.EMPTY.withColor(Formatting.RED)), Util.NIL_UUID);
+      return 0;
+    }
+    return blocksFilled;
   }
 
   private Utils() {

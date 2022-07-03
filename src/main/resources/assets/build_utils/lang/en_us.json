@@ -15,8 +15,7 @@
   "item.build_utils.creative_wand.tooltip.pos1": "First position: %s",
   "item.build_utils.creative_wand.tooltip.pos2": "Second position: %s",
   "item.build_utils.creative_wand.tooltip.blockstate": "Block state: %s",
-  "item.build_utils.creative_wand.feedback.filling_sub_zone": "%s -> %s",
-  "item.build_utils.creative_wand.feedback.total_filled_volume": "Total number of filled blocks: %d",
+  "item.build_utils.creative_wand.feedback.total_filled_volume": "Successfully filled %d block(s)",
   "item.build_utils.creative_wand.action_bar.pos1_selected": "Selected first position: %s",
   "item.build_utils.creative_wand.action_bar.pos2_selected": "Selected second position: %s",
   "item.build_utils.creative_wand.action_bar.blockstate_selected": "Selected block state: %s",
@@ -30,6 +29,8 @@
   "gui.build_utils.laser_telemeter.x_offset_field.label": "X Offset",
   "gui.build_utils.laser_telemeter.y_offset_field.label": "Y Offset",
   "gui.build_utils.laser_telemeter.z_offset_field.label": "Z Offset",
+  "gui.build_utils.laser_telemeter.filler_block_state.label": "Filler Block State",
+  "gui.build_utils.laser_telemeter.fill_area.label": "Fill Area",
 
   "gui.build_utils.todo_list.title.player": "%s’s todo list",
   "gui.build_utils.todo_list.title.global": "Global todo list",

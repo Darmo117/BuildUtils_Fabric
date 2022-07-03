@@ -1,16 +1,27 @@
 package net.darmo_creations.build_utils.block_entities;
 
+import net.darmo_creations.build_utils.Utils;
 import net.darmo_creations.build_utils.blocks.LaserTelemeterBlock;
 import net.darmo_creations.build_utils.blocks.ModBlocks;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtHelper;
+import net.minecraft.network.MessageType;
 import net.minecraft.network.Packet;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.text.Style;
+import net.minecraft.text.TranslatableText;
+import net.minecraft.util.Formatting;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3i;
+
+import java.util.Objects;
 
 /**
  * Block entity for laser telemeter.
@@ -23,14 +34,17 @@ import net.minecraft.util.math.Vec3i;
 public class LaserTelemeterBlockEntity extends BlockEntity {
   private static final String SIZE_TAG_KEY = "Size";
   private static final String OFFSET_TAG_KEY = "Offset";
+  private static final String FILLER_BLOCK_STATE_KEY = "FillerBlockState";
 
   private Vec3i size;
-  private BlockPos offset;
+  private Vec3i offset;
+  private BlockState fillerBlockState;
 
   public LaserTelemeterBlockEntity(BlockPos pos, BlockState state) {
     super(ModBlockEntities.LASER_TELEMETER, pos, state);
     this.size = Vec3i.ZERO;
-    this.offset = BlockPos.ORIGIN;
+    this.offset = Vec3i.ZERO;
+    this.fillerBlockState = Blocks.AIR.getDefaultState();
   }
 
   public Vec3i getSize() {
@@ -38,24 +52,50 @@ public class LaserTelemeterBlockEntity extends BlockEntity {
   }
 
   public void setSize(Vec3i size) {
-    this.size = size;
+    this.size = Objects.requireNonNull(size);
     this.markDirty();
   }
 
-  public BlockPos getOffset() {
+  public Vec3i getOffset() {
     return this.offset;
   }
 
-  public void setOffset(BlockPos offset) {
-    this.offset = offset;
+  public void setOffset(Vec3i offset) {
+    this.offset = Objects.requireNonNull(offset);
     this.markDirty();
+  }
+
+  public BlockState getFillerBlockState() {
+    return this.fillerBlockState;
+  }
+
+  public void setFillerBlockState(BlockState fillerBlockState) {
+    this.fillerBlockState = Objects.requireNonNull(fillerBlockState);
+    this.markDirty();
+  }
+
+  public void fillArea() {
+    if (this.world instanceof ServerWorld w) {
+      if (this.size.getX() != 0 && this.size.getY() != 0 && this.size.getZ() != 0 && this.fillerBlockState != null) {
+        int blocksNb = Utils.fill(this.pos.add(this.offset), this.pos.add(this.offset).add(this.size).add(-1, -1, -1), this.fillerBlockState, w);
+        w.getServer().getPlayerManager().broadcast(
+            new TranslatableText("item.build_utils.creative_wand.feedback.total_filled_volume", blocksNb), MessageType.CHAT, Util.NIL_UUID);
+      } else {
+        w.getServer().getPlayerManager().broadcast(
+            new TranslatableText("item.build_utils.creative_wand.feedback.cannot_fill_area")
+                .setStyle(Style.EMPTY.withColor(Formatting.RED)), MessageType.CHAT, Util.NIL_UUID);
+      }
+    }
   }
 
   @Override
   protected void writeNbt(NbtCompound nbt) {
     super.writeNbt(nbt);
     nbt.put(SIZE_TAG_KEY, NbtHelper.fromBlockPos(new BlockPos(this.size)));
-    nbt.put(OFFSET_TAG_KEY, NbtHelper.fromBlockPos(this.offset));
+    nbt.put(OFFSET_TAG_KEY, NbtHelper.fromBlockPos(new BlockPos(this.offset)));
+    if (this.fillerBlockState != null) {
+      nbt.put(FILLER_BLOCK_STATE_KEY, NbtHelper.fromBlockState(this.fillerBlockState));
+    }
   }
 
   @Override
@@ -63,6 +103,11 @@ public class LaserTelemeterBlockEntity extends BlockEntity {
     super.readNbt(nbt);
     this.size = NbtHelper.toBlockPos(nbt.getCompound(SIZE_TAG_KEY));
     this.offset = NbtHelper.toBlockPos(nbt.getCompound(OFFSET_TAG_KEY));
+    if (nbt.contains(FILLER_BLOCK_STATE_KEY, NbtElement.COMPOUND_TYPE)) {
+      this.fillerBlockState = NbtHelper.toBlockState(nbt.getCompound(FILLER_BLOCK_STATE_KEY));
+    } else {
+      this.fillerBlockState = null;
+    }
   }
 
   @Override

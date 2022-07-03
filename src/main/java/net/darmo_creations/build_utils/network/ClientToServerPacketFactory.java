@@ -2,6 +2,8 @@ package net.darmo_creations.build_utils.network;
 
 import io.netty.buffer.Unpooled;
 import net.darmo_creations.build_utils.BuildUtils;
+import net.darmo_creations.build_utils.Utils;
+import net.minecraft.block.BlockState;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -22,11 +24,13 @@ public class ClientToServerPacketFactory {
    *
    * @see ServerPacketHandlers#handleLaserTelemeterBEPacket(MinecraftServer, ServerPlayerEntity, PacketByteBuf)
    */
-  public static PacketByteBuf createLaserTelemeterBEPacketByteBuffer(final BlockPos pos, BlockPos offset, Vec3i size) {
+  public static PacketByteBuf createLaserTelemeterBEPacketByteBuffer(final BlockPos pos, Vec3i offset, Vec3i size, BlockState fillerBlockState, boolean fillArea) {
     PacketByteBuf buf = new PacketByteBuf(Unpooled.buffer());
     buf.writeBlockPos(pos);
-    buf.writeBlockPos(offset);
+    PacketBufUtil.writeVec3i(buf, offset);
     PacketBufUtil.writeVec3i(buf, size);
+    buf.writeString(Utils.blockStateToString(fillerBlockState));
+    buf.writeBoolean(fillArea);
     return buf;
   }
 }

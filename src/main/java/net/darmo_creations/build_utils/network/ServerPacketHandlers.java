@@ -2,6 +2,7 @@ package net.darmo_creations.build_utils.network;
 
 import net.darmo_creations.build_utils.Utils;
 import net.darmo_creations.build_utils.block_entities.LaserTelemeterBlockEntity;
+import net.minecraft.block.BlockState;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -18,16 +19,22 @@ public final class ServerPacketHandlers {
    * @param server Server instance.
    * @param player Player that sent the packet.
    * @param buf    Packet’s payload.
-   * @see ClientToServerPacketFactory#createLaserTelemeterBEPacketByteBuffer(BlockPos, BlockPos, Vec3i)
+   * @see ClientToServerPacketFactory#createLaserTelemeterBEPacketByteBuffer(BlockPos, Vec3i, Vec3i, BlockState, boolean)
    */
   public static void handleLaserTelemeterBEPacket(MinecraftServer server, final ServerPlayerEntity player, final PacketByteBuf buf) {
     BlockPos pos = buf.readBlockPos();
-    BlockPos offset = buf.readBlockPos();
+    Vec3i offset = PacketBufUtil.readVec3i(buf);
     Vec3i size = PacketBufUtil.readVec3i(buf);
+    BlockState fillerBlockState = Utils.stringToBlockState(buf.readString());
+    boolean fillArea = buf.readBoolean();
     server.execute(() -> Utils.getBlockEntity(LaserTelemeterBlockEntity.class, player.world, pos)
         .ifPresent(be -> {
           be.setOffset(offset);
           be.setSize(size);
+          be.setFillerBlockState(fillerBlockState);
+          if (fillArea) {
+            be.fillArea();
+          }
         })
     );
   }

@@ -1,6 +1,5 @@
 package net.darmo_creations.build_utils.items;
 
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.darmo_creations.build_utils.Utils;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -12,7 +11,6 @@ import net.minecraft.item.ItemUsageContext;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtHelper;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
@@ -22,7 +20,6 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.List;
 
@@ -35,8 +32,6 @@ import java.util.List;
  * <li>Sneak-right-click on a block to select it as filler. If no block is targetted, air will be selected.
  */
 public class CreativeWandItem extends Item {
-  private static final int SUBPART_SIZE = 32;
-
   private static final String POS1_TAG_KEY = "Pos1";
   private static final String POS2_TAG_KEY = "Pos2";
   private static final String STATE_TAG_KEY = "BlockState";
@@ -85,69 +80,10 @@ public class CreativeWandItem extends Item {
    * @param world  The world to edit.
    */
   private void fill(PlayerEntity player, WandData data, ServerWorld world) {
-    Pair<BlockPos, BlockPos> positions = Utils.normalizePositions(data.firstPosition, data.secondPosition);
-    final BlockPos pos1 = positions.getLeft();
-    final BlockPos pos2 = positions.getRight();
-    final BlockPos size = pos2.subtract(pos1).add(1, 1, 1);
-    int blocksNb = 0;
-    int x = 0, y, z;
-    while (x < size.getX()) {
-      y = 0;
-      while (y < size.getY()) {
-        z = 0;
-        while (z < size.getZ()) {
-          blocksNb += this.fillSubPart(
-              pos1.add(x, y, z),
-              pos1.add(
-                  Math.min(x + SUBPART_SIZE, size.getX()) - 1,
-                  Math.min(y + SUBPART_SIZE, size.getY()) - 1,
-                  Math.min(z + SUBPART_SIZE, size.getZ()) - 1
-              ),
-              data.blockState,
-              world,
-              player
-          );
-          z += SUBPART_SIZE;
-        }
-        y += SUBPART_SIZE;
-      }
-      x += SUBPART_SIZE;
-    }
+    int blocksNb = Utils.fill(data.firstPosition, data.secondPosition, data.blockState, world);
     Utils.sendMessage(world, player,
         new TranslatableText("item.build_utils.creative_wand.feedback.total_filled_volume", blocksNb),
         false);
-  }
-
-  /**
-   * Fills the area between the two positions.
-   * Action is delegated to the /fill command.
-   *
-   * @param pos1       First position.
-   * @param pos2       Second position.
-   * @param blockState Block state to use as filler.
-   * @param world      The world to edit.
-   * @param player     The player holding the item.
-   * @return The number of filled blocks.
-   */
-  private int fillSubPart(BlockPos pos1, BlockPos pos2, BlockState blockState, ServerWorld world, PlayerEntity player) {
-    Utils.sendMessage(world, player,
-        new TranslatableText("item.build_utils.creative_wand.feedback.filling_sub_zone",
-            Utils.blockPosToString(pos1), Utils.blockPosToString(pos2)),
-        false);
-    String command = "fill %s %s %s".formatted(
-        Utils.blockPosToString(pos1),
-        Utils.blockPosToString(pos2),
-        Utils.blockStateToString(blockState)
-    );
-    int blocksFilled;
-    try {
-      blocksFilled = world.getServer().getCommandManager().getDispatcher().execute(command, player.getCommandSource());
-    } catch (CommandSyntaxException e) {
-      Utils.sendMessage(world, player, new LiteralText(e.getMessage())
-          .setStyle(Style.EMPTY.withColor(Formatting.RED)), false);
-      return 0;
-    }
-    return blocksFilled;
   }
 
   @Override
