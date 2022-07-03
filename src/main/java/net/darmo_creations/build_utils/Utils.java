@@ -5,15 +5,20 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.command.argument.BlockArgumentParser;
+import net.minecraft.command.argument.EntityAnchorArgumentType;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.network.MessageType;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.command.CommandOutput;
+import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.property.Property;
 import net.minecraft.text.LiteralText;
-import net.minecraft.text.Style;
 import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec2f;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3i;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
@@ -21,6 +26,8 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -217,15 +224,50 @@ public final class Utils {
         Utils.blockStateToString(blockState)
     );
     int blocksFilled;
-    try {
-      blocksFilled = world.getServer().getCommandManager().getDispatcher()
-          .execute(command, world.getServer().getCommandSource());
-    } catch (CommandSyntaxException e) {
-      world.getServer().sendSystemMessage(new LiteralText(e.getMessage())
-          .setStyle(Style.EMPTY.withColor(Formatting.RED)), Util.NIL_UUID);
+    MinecraftServer server = world.getServer();
+    CommandSourceStackWrapper commandSourceStack = new CommandSourceStackWrapper(server, world);
+    blocksFilled = server.getCommandManager().execute(commandSourceStack, command);
+    if (blocksFilled == 0 && commandSourceStack.anyFailures) {
+      commandSourceStack.errors.forEach(text ->
+          server.getPlayerManager().broadcast(text, MessageType.CHAT, Util.NIL_UUID));
       return 0;
     }
     return blocksFilled;
+  }
+
+  /**
+   * Custom source stack wrapper.
+   */
+  private static class CommandSourceStackWrapper extends ServerCommandSource {
+    /**
+     * The list of all errors.
+     */
+    final List<Text> errors;
+    /**
+     * Whether any failures occured while executing the last command.
+     */
+    boolean anyFailures;
+
+    /**
+     * Create a wrapper for a command source and level.
+     * The new instance has a permission level of 2 in order to
+     * prevent op commands from being executed from within scripts.
+     */
+    CommandSourceStackWrapper(CommandOutput source, ServerWorld world) {
+      super(source, Vec3d.ofBottomCenter(world.getSpawnPos()), Vec2f.ZERO, world, 2,
+          "Server", new LiteralText("Server"), world.getServer(), null,
+          true, (context, success, result) -> {
+          }, EntityAnchorArgumentType.EntityAnchor.FEET);
+      this.errors = new LinkedList<>();
+      this.anyFailures = false;
+    }
+
+    @Override
+    public void sendError(Text message) {
+      super.sendError(message);
+      this.errors.add(message);
+      this.anyFailures = true;
+    }
   }
 
   private Utils() {
