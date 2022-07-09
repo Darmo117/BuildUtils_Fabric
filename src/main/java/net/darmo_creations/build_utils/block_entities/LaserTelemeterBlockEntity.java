@@ -17,11 +17,13 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Style;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Pair;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3i;
 
 import java.util.Objects;
+import java.util.regex.Pattern;
 
 /**
  * Block entity for laser telemeter.
@@ -32,19 +34,35 @@ import java.util.Objects;
  * @see ModBlocks#LASER_TELEMETER
  */
 public class LaserTelemeterBlockEntity extends BlockEntity {
+  public static final Pattern FILE_NAME_PATTERN = Pattern.compile("^[\\w.-]+$");
+
   private static final String SIZE_TAG_KEY = "Size";
   private static final String OFFSET_TAG_KEY = "Offset";
   private static final String FILLER_BLOCK_STATE_KEY = "FillerBlockState";
+  private static final String FILE_NAME_KEY = "FileName";
+  private static final String MODE_KEY = "Mode";
 
   private Vec3i size;
   private Vec3i offset;
+  private Mode mode;
   private BlockState fillerBlockState;
+  private String fileName;
 
   public LaserTelemeterBlockEntity(BlockPos pos, BlockState state) {
     super(ModBlockEntities.LASER_TELEMETER, pos, state);
-    this.size = Vec3i.ZERO;
-    this.offset = Vec3i.ZERO;
-    this.fillerBlockState = Blocks.AIR.getDefaultState();
+    this.setSize(Vec3i.ZERO);
+    this.setOffset(Vec3i.ZERO);
+    this.setFillerBlockState(Blocks.AIR.getDefaultState());
+    this.setMode(Mode.BOX);
+  }
+
+  public Mode getMode() {
+    return this.mode;
+  }
+
+  public void setMode(Mode mode) {
+    this.mode = Objects.requireNonNull(mode);
+    this.markDirty();
   }
 
   public Vec3i getSize() {
@@ -74,26 +92,82 @@ public class LaserTelemeterBlockEntity extends BlockEntity {
     this.markDirty();
   }
 
-  public void fillArea() {
+  public String getFileName() {
+    return this.fileName;
+  }
+
+  public void setFileName(String fileName) {
+    if (fileName != null && !FILE_NAME_PATTERN.matcher(fileName).find()) {
+      throw new IllegalArgumentException("invalid file name: " + fileName);
+    }
+    this.fileName = fileName;
+    this.markDirty();
+  }
+
+  public void performAction() {
     if (this.world instanceof ServerWorld w) {
-      if (this.size.getX() != 0 && this.size.getY() != 0 && this.size.getZ() != 0 && this.fillerBlockState != null) {
-        int xo1 = this.size.getX() > 0 ? 0 : -1;
-        int yo1 = this.size.getY() > 0 ? 0 : -1;
-        int zo1 = this.size.getZ() > 0 ? 0 : -1;
-        int xo2 = this.size.getX() < 0 ? 0 : -1;
-        int yo2 = this.size.getY() < 0 ? 0 : -1;
-        int zo2 = this.size.getZ() < 0 ? 0 : -1;
-        BlockPos pos1 = this.pos.add(this.offset).add(xo1, yo1, zo1);
-        BlockPos pos2 = this.pos.add(this.offset).add(this.size).add(xo2, yo2, zo2);
-        int blocksNb = Utils.fill(pos1, pos2, this.fillerBlockState, w);
-        w.getServer().getPlayerManager().broadcast(
-            new TranslatableText("item.build_utils.creative_wand.feedback.total_filled_volume", blocksNb), MessageType.CHAT, Util.NIL_UUID);
+      if (this.size.getX() != 0 && this.size.getY() != 0 && this.size.getZ() != 0) {
+        switch (this.mode) {
+          case FILL -> this.fillArea(w);
+          case COPY -> this.copyArea(w);
+          case PASTE -> this.pasteStructure(w);
+        }
       } else {
         w.getServer().getPlayerManager().broadcast(
-            new TranslatableText("block.build_utils.laser_telemeter.error.cannot_fill_area")
+            new TranslatableText("block.build_utils.laser_telemeter.error.cannot_perform_action")
                 .setStyle(Style.EMPTY.withColor(Formatting.RED)), MessageType.CHAT, Util.NIL_UUID);
       }
     }
+  }
+
+  private void fillArea(ServerWorld world) {
+    if (this.fillerBlockState != null) {
+      Pair<BlockPos, BlockPos> corners = this.getAreaCorners();
+      int blocksNb = Utils.fill(corners.getLeft(), corners.getRight(), this.fillerBlockState, world);
+      world.getServer().getPlayerManager().broadcast(
+          new TranslatableText("block.build_utils.laser_telemeter.feedback.total_filled_volume", blocksNb), MessageType.CHAT, Util.NIL_UUID);
+    } else {
+      world.getServer().getPlayerManager().broadcast(
+          new TranslatableText("block.build_utils.laser_telemeter.error.cannot_fill_area")
+              .setStyle(Style.EMPTY.withColor(Formatting.RED)), MessageType.CHAT, Util.NIL_UUID);
+    }
+  }
+
+  private void copyArea(final ServerWorld world) {
+    if (this.fileName != null) {
+      Pair<BlockPos, BlockPos> corners = this.getAreaCorners();
+      // TODO copy
+      world.getServer().getPlayerManager().broadcast(
+          new TranslatableText("block.build_utils.laser_telemeter.feedback.copy_successfull", this.fileName), MessageType.CHAT, Util.NIL_UUID);
+    } else {
+      world.getServer().getPlayerManager().broadcast(
+          new TranslatableText("block.build_utils.laser_telemeter.error.cannot_copy_area")
+              .setStyle(Style.EMPTY.withColor(Formatting.RED)), MessageType.CHAT, Util.NIL_UUID);
+    }
+  }
+
+  private void pasteStructure(ServerWorld world) {
+    if (this.fileName != null) {
+      // TODO paste
+      world.getServer().getPlayerManager().broadcast(
+          new TranslatableText("block.build_utils.laser_telemeter.feedback.paste_successfull", this.fileName), MessageType.CHAT, Util.NIL_UUID);
+    } else {
+      world.getServer().getPlayerManager().broadcast(
+          new TranslatableText("block.build_utils.laser_telemeter.error.cannot_paste_structure")
+              .setStyle(Style.EMPTY.withColor(Formatting.RED)), MessageType.CHAT, Util.NIL_UUID);
+    }
+  }
+
+  private Pair<BlockPos, BlockPos> getAreaCorners() {
+    int xo1 = this.size.getX() > 0 ? 0 : -1;
+    int yo1 = this.size.getY() > 0 ? 0 : -1;
+    int zo1 = this.size.getZ() > 0 ? 0 : -1;
+    int xo2 = this.size.getX() < 0 ? 0 : -1;
+    int yo2 = this.size.getY() < 0 ? 0 : -1;
+    int zo2 = this.size.getZ() < 0 ? 0 : -1;
+    BlockPos pos1 = this.pos.add(this.offset).add(xo1, yo1, zo1);
+    BlockPos pos2 = this.pos.add(this.offset).add(this.size).add(xo2, yo2, zo2);
+    return new Pair<>(pos1, pos2);
   }
 
   @Override
@@ -104,6 +178,10 @@ public class LaserTelemeterBlockEntity extends BlockEntity {
     if (this.fillerBlockState != null) {
       nbt.put(FILLER_BLOCK_STATE_KEY, NbtHelper.fromBlockState(this.fillerBlockState));
     }
+    if (this.fileName != null) {
+      nbt.putString(FILE_NAME_KEY, this.fileName);
+    }
+    nbt.putInt(MODE_KEY, this.mode.ordinal());
   }
 
   @Override
@@ -116,6 +194,12 @@ public class LaserTelemeterBlockEntity extends BlockEntity {
     } else {
       this.fillerBlockState = null;
     }
+    if (nbt.contains(FILE_NAME_KEY, NbtElement.STRING_TYPE)) {
+      this.fileName = nbt.getString(FILE_NAME_KEY);
+    } else {
+      this.fileName = null;
+    }
+    this.mode = Mode.values()[nbt.getInt(MODE_KEY)];
   }
 
   @Override
@@ -126,5 +210,12 @@ public class LaserTelemeterBlockEntity extends BlockEntity {
   @Override
   public NbtCompound toInitialChunkDataNbt() {
     return this.createNbt();
+  }
+
+  public enum Mode {
+    BOX,
+    FILL,
+    COPY,
+    PASTE
   }
 }

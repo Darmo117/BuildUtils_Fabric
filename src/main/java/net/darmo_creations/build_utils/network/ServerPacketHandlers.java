@@ -19,21 +19,29 @@ public final class ServerPacketHandlers {
    * @param server Server instance.
    * @param player Player that sent the packet.
    * @param buf    Packet’s payload.
-   * @see ClientToServerPacketFactory#createLaserTelemeterBEPacketByteBuffer(BlockPos, Vec3i, Vec3i, BlockState, boolean)
+   * @see C2SPacketFactory#createLaserTelemeterBEPacketByteBuffer(BlockPos, Vec3i, Vec3i, LaserTelemeterBlockEntity.Mode, BlockState, String, boolean)
    */
   public static void handleLaserTelemeterBEPacket(MinecraftServer server, final ServerPlayerEntity player, final PacketByteBuf buf) {
     BlockPos pos = buf.readBlockPos();
     Vec3i offset = PacketBufUtil.readVec3i(buf);
     Vec3i size = PacketBufUtil.readVec3i(buf);
+    LaserTelemeterBlockEntity.Mode mode = LaserTelemeterBlockEntity.Mode.values()[buf.readInt()];
     BlockState fillerBlockState = Utils.stringToBlockState(buf.readString());
-    boolean fillArea = buf.readBoolean();
+    String fileName = buf.readString().strip();
+    boolean performAction = buf.readBoolean();
     server.execute(() -> Utils.getBlockEntity(LaserTelemeterBlockEntity.class, player.world, pos)
         .ifPresent(be -> {
           be.setOffset(offset);
           be.setSize(size);
+          be.setMode(mode);
           be.setFillerBlockState(fillerBlockState);
-          if (fillArea) {
-            be.fillArea();
+          if ("".equals(fileName)) {
+            be.setFileName(null);
+          } else {
+            be.setFileName(fileName);
+          }
+          if (performAction) {
+            be.performAction();
           }
         })
     );
