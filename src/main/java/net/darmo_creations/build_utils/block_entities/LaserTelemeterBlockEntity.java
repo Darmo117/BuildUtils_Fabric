@@ -41,12 +41,16 @@ public class LaserTelemeterBlockEntity extends BlockEntity {
   private static final String FILLER_BLOCK_STATE_KEY = "FillerBlockState";
   private static final String STRUCTURE_NAME_KEY = "StructureName";
   private static final String MODE_KEY = "Mode";
+  private static final String ROTATION_KEY = "Rotation";
+  private static final String MIRROR_KEY = "Mirror";
 
   private Vec3i size;
   private Vec3i offset;
   private Mode mode;
   private BlockState fillerBlockState;
   private String structureName;
+  private BlockRotation rotation;
+  private BlockMirror mirror;
 
   public LaserTelemeterBlockEntity(final BlockPos pos, final BlockState state) {
     super(ModBlockEntities.LASER_TELEMETER, pos, state);
@@ -54,6 +58,8 @@ public class LaserTelemeterBlockEntity extends BlockEntity {
     this.setOffset(Vec3i.ZERO);
     this.setFillerBlockState(Blocks.AIR.getDefaultState());
     this.setMode(Mode.BOX);
+    this.setRotation(BlockRotation.NONE);
+    this.setMirror(BlockMirror.NONE);
   }
 
   public Mode getMode() {
@@ -102,6 +108,24 @@ public class LaserTelemeterBlockEntity extends BlockEntity {
 
   public void setStructureName(String structureName) {
     this.structureName = structureName;
+    this.markDirty();
+  }
+
+  public BlockRotation getRotation() {
+    return this.rotation;
+  }
+
+  public void setRotation(BlockRotation rotation) {
+    this.rotation = Objects.requireNonNull(rotation);
+    this.markDirty();
+  }
+
+  public BlockMirror getMirror() {
+    return this.mirror;
+  }
+
+  public void setMirror(BlockMirror mirror) {
+    this.mirror = Objects.requireNonNull(mirror);
     this.markDirty();
   }
 
@@ -201,8 +225,8 @@ public class LaserTelemeterBlockEntity extends BlockEntity {
 
   private void place(ServerWorld world, final Structure structure) {
     StructurePlacementData structurePlacementData = new StructurePlacementData()
-        .setMirror(BlockMirror.NONE)
-        .setRotation(BlockRotation.NONE)
+        .setMirror(this.mirror)
+        .setRotation(this.rotation)
         .setIgnoreEntities(true);
     BlockPos pos = this.getPos().add(this.offset);
     structure.place(world, pos, pos, structurePlacementData, world.getServer().getOverworld().getRandom(), Block.NOTIFY_LISTENERS);
@@ -219,6 +243,8 @@ public class LaserTelemeterBlockEntity extends BlockEntity {
     if (this.structureName != null) {
       nbt.putString(STRUCTURE_NAME_KEY, this.structureName);
     }
+    nbt.putInt(ROTATION_KEY, this.rotation.ordinal());
+    nbt.putInt(MIRROR_KEY, this.mirror.ordinal());
     nbt.putInt(MODE_KEY, this.mode.ordinal());
   }
 
@@ -237,6 +263,8 @@ public class LaserTelemeterBlockEntity extends BlockEntity {
     } else {
       this.structureName = null;
     }
+    this.rotation = BlockRotation.values()[nbt.getInt(ROTATION_KEY)];
+    this.mirror = BlockMirror.values()[nbt.getInt(MIRROR_KEY)];
     this.mode = Mode.values()[nbt.getInt(MODE_KEY)];
   }
 

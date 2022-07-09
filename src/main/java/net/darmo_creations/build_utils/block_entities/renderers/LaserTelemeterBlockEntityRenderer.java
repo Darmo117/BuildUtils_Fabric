@@ -33,14 +33,59 @@ public class LaserTelemeterBlockEntityRenderer implements BlockEntityRenderer<La
     PlayerEntity player = Objects.requireNonNull(MinecraftClient.getInstance().player);
 
     if (player.isCreativeLevelTwoOp() || player.isSpectator()) {
+      // Adapted from StructureBlockBlockEntityRenderer#render
       Vec3i size = be.getSize();
       Vec3i offset = be.getOffset();
-      int boxX1 = offset.getX();
-      int boxY1 = offset.getY();
-      int boxZ1 = offset.getZ();
-      int boxX2 = boxX1 + size.getX();
-      int boxY2 = boxY1 + size.getY();
-      int boxZ2 = boxZ1 + size.getZ();
+      double sizeX;
+      double sizeZ;
+      switch (be.getMirror()) {
+        case LEFT_RIGHT -> {
+          sizeX = size.getX();
+          sizeZ = -size.getZ();
+        }
+        case FRONT_BACK -> {
+          sizeX = -size.getX();
+          sizeZ = size.getZ();
+        }
+        default -> {
+          sizeX = size.getX();
+          sizeZ = size.getZ();
+        }
+      }
+      double offsetX = offset.getX();
+      double offsetZ = offset.getZ();
+      double boxX1;
+      double boxY1 = offset.getY();
+      double boxZ1;
+      double boxX2;
+      double boxY2 = boxY1 + (double) size.getY();
+      double boxZ2;
+      switch (be.getRotation()) {
+        case CLOCKWISE_90 -> {
+          boxX1 = sizeZ < 0 ? offsetX : offsetX + 1;
+          boxZ1 = sizeX < 0 ? offsetZ + 1 : offsetZ;
+          boxX2 = boxX1 - sizeZ;
+          boxZ2 = boxZ1 + sizeX;
+        }
+        case CLOCKWISE_180 -> {
+          boxX1 = sizeX < 0 ? offsetX : offsetX + 1;
+          boxZ1 = sizeZ < 0 ? offsetZ : offsetZ + 1;
+          boxX2 = boxX1 - sizeX;
+          boxZ2 = boxZ1 - sizeZ;
+        }
+        case COUNTERCLOCKWISE_90 -> {
+          boxX1 = sizeZ < 0 ? offsetX + 1 : offsetX;
+          boxZ1 = sizeX < 0 ? offsetZ : offsetZ + 1;
+          boxX2 = boxX1 + sizeZ;
+          boxZ2 = boxZ1 - sizeX;
+        }
+        default -> {
+          boxX1 = sizeX < 0 ? offsetX + 1 : offsetX;
+          boxZ1 = sizeZ < 0 ? offsetZ + 1 : offsetZ;
+          boxX2 = boxX1 + sizeX;
+          boxZ2 = boxZ1 + sizeZ;
+        }
+      }
       WorldRenderer.drawBox(
           matrices, vertexConsumers.getBuffer(RenderLayer.getLines()),
           boxX1, boxY1, boxZ1, boxX2, boxY2, boxZ2,

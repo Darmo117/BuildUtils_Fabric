@@ -9,6 +9,8 @@ import net.minecraft.block.BlockState;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3i;
 
@@ -24,6 +26,8 @@ public class LaserTelemeterPacket implements Packet {
   private final LaserTelemeterBlockEntity.Mode mode;
   private final BlockState fillerBlockState;
   private final String structureName;
+  private final BlockRotation rotation;
+  private final BlockMirror mirror;
   private final boolean performAction;
   private final boolean previewPaste;
 
@@ -36,6 +40,8 @@ public class LaserTelemeterPacket implements Packet {
     this.mode = LaserTelemeterBlockEntity.Mode.values()[buf.readInt()];
     this.fillerBlockState = Utils.stringToBlockState(buf.readString());
     this.structureName = buf.readString().strip();
+    this.rotation = BlockRotation.values()[buf.readInt() % BlockRotation.values().length];
+    this.mirror = BlockMirror.values()[buf.readInt() % BlockMirror.values().length];
     this.performAction = buf.readBoolean();
     this.previewPaste = buf.readBoolean();
   }
@@ -47,6 +53,8 @@ public class LaserTelemeterPacket implements Packet {
       final LaserTelemeterBlockEntity.Mode mode,
       final BlockState fillerBlockState,
       final String structureName,
+      final BlockRotation rotation,
+      final BlockMirror mirror,
       final boolean performAction,
       final boolean previewPaste
   ) {
@@ -56,6 +64,8 @@ public class LaserTelemeterPacket implements Packet {
     this.mode = Objects.requireNonNull(mode);
     this.fillerBlockState = Objects.requireNonNull(fillerBlockState);
     this.structureName = structureName;
+    this.rotation = rotation;
+    this.mirror = mirror;
     this.performAction = performAction;
     this.previewPaste = previewPaste;
   }
@@ -69,6 +79,8 @@ public class LaserTelemeterPacket implements Packet {
     buf.writeInt(this.mode.ordinal());
     buf.writeString(Utils.blockStateToString(this.fillerBlockState));
     buf.writeString(this.structureName);
+    buf.writeInt(this.rotation.ordinal());
+    buf.writeInt(this.mirror.ordinal());
     buf.writeBoolean(this.performAction);
     buf.writeBoolean(this.previewPaste);
     return buf;
@@ -106,6 +118,14 @@ public class LaserTelemeterPacket implements Packet {
     return this.previewPaste;
   }
 
+  public BlockRotation rotation() {
+    return this.rotation;
+  }
+
+  public BlockMirror mirror() {
+    return this.mirror;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -115,18 +135,18 @@ public class LaserTelemeterPacket implements Packet {
       return false;
     }
     LaserTelemeterPacket that = (LaserTelemeterPacket) o;
-    return this.performAction == that.performAction && this.previewPaste == that.previewPaste && this.pos.equals(that.pos) && this.offset.equals(that.offset) && this.size.equals(that.size) && this.mode == that.mode && this.fillerBlockState.equals(that.fillerBlockState) && Objects.equals(this.structureName, that.structureName);
+    return this.performAction == that.performAction && this.previewPaste == that.previewPaste && this.pos.equals(that.pos) && this.offset.equals(that.offset) && this.size.equals(that.size) && this.mode == that.mode && this.fillerBlockState.equals(that.fillerBlockState) && Objects.equals(this.structureName, that.structureName) && this.rotation == that.rotation && this.mirror == that.mirror;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(this.pos, this.offset, this.size, this.mode, this.fillerBlockState, this.structureName, this.performAction, this.previewPaste);
+    return Objects.hash(this.pos, this.offset, this.size, this.mode, this.fillerBlockState, this.structureName, this.rotation, this.mirror, this.performAction, this.previewPaste);
   }
 
   @Override
   public String toString() {
-    return "LaserTelemeterPacket[pos=%s, offset=%s, size=%s, mode=%s, fillerBlockState=%s, structureName=%s, performAction=%s, previewPaste=%s]"
-        .formatted(this.pos, this.offset, this.size, this.mode, this.fillerBlockState, this.structureName, this.performAction, this.previewPaste);
+    return "LaserTelemeterPacket[pos=%s, offset=%s, size=%s, mode=%s, fillerBlockState=%s, structureName=%s, rotation=%s, mirror=%s, performAction=%s, previewPaste=%s]"
+        .formatted(this.pos, this.offset, this.size, this.mode, this.fillerBlockState, this.structureName, this.rotation, this.mirror, this.performAction, this.previewPaste);
   }
 
   /**
@@ -146,6 +166,8 @@ public class LaserTelemeterPacket implements Packet {
             } else {
               be.setStructureName(packet.structureName());
             }
+            be.setRotation(packet.rotation());
+            be.setMirror(packet.mirror());
             if (packet.performAction()) {
               be.performAction(packet.previewPaste());
             }

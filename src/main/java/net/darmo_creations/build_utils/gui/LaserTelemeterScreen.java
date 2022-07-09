@@ -13,6 +13,8 @@ import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.TranslatableText;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3i;
 
@@ -38,6 +40,8 @@ public class LaserTelemeterScreen extends Screen {
   private ButtonWidget modeButton;
   private ButtonWidget actionButton;
   private ButtonWidget previewPasteButton;
+  private ButtonWidget rotationButton;
+  private ButtonWidget mirrorButton;
 
   // Data
   private final LaserTelemeterBlockEntity blockEntity;
@@ -46,6 +50,8 @@ public class LaserTelemeterScreen extends Screen {
   private LaserTelemeterBlockEntity.Mode mode;
   private final BlockState fillerBlockState;
   private final String structureName;
+  private BlockRotation rotation;
+  private BlockMirror mirror;
 
   /**
    * Creates a GUI for the given tile entity.
@@ -60,6 +66,8 @@ public class LaserTelemeterScreen extends Screen {
     this.mode = blockEntity.getMode();
     this.fillerBlockState = blockEntity.getFillerBlockState();
     this.structureName = blockEntity.getStructureName();
+    this.rotation = blockEntity.getRotation();
+    this.mirror = blockEntity.getMirror();
   }
 
   @Override
@@ -93,6 +101,26 @@ public class LaserTelemeterScreen extends Screen {
     this.lengthZTextField = this.addDrawableChild(
         new TextFieldWidget(this.client.textRenderer, middle + btnW / 2, y, btnW, BUTTON_HEIGHT, null));
     this.lengthZTextField.setText("" + this.size.getZ());
+
+    this.rotationButton = this.addDrawableChild(new ButtonWidget(
+        middle - BUTTON_WIDTH / 4 - MARGIN, y,
+        BUTTON_WIDTH / 4, BUTTON_HEIGHT,
+        new LiteralText(""), // Set by setMode() method
+        b -> this.onCycleRotationMode(),
+        (button, matrices, mouseX, mouseY) ->
+            LaserTelemeterScreen.this.renderTooltip(matrices,
+                new TranslatableText("gui.build_utils.laser_telemeter.rotation_button.tooltip"), mouseX, mouseY)
+    ));
+
+    this.mirrorButton = this.addDrawableChild(new ButtonWidget(
+        middle + MARGIN, y,
+        BUTTON_WIDTH / 4, BUTTON_HEIGHT,
+        new LiteralText(""), // Set by setMode() method
+        b -> this.onCycleMirrorMode(),
+        (button, matrices, mouseX, mouseY) ->
+            LaserTelemeterScreen.this.renderTooltip(matrices,
+                new TranslatableText("gui.build_utils.laser_telemeter.mirror_button.%s.tooltip".formatted(this.mirror.name().toLowerCase())), mouseX, mouseY)
+    ));
 
     y += 2 * BUTTON_HEIGHT;
 
@@ -152,6 +180,16 @@ public class LaserTelemeterScreen extends Screen {
     this.updateFields();
   }
 
+  private void onCycleRotationMode() {
+    this.rotation = BlockRotation.values()[(this.rotation.ordinal() + 1) % BlockRotation.values().length];
+    this.updateFields();
+  }
+
+  private void onCycleMirrorMode() {
+    this.mirror = BlockMirror.values()[(this.mirror.ordinal() + 1) % BlockMirror.values().length];
+    this.updateFields();
+  }
+
   private void onCycleMode() {
     LaserTelemeterBlockEntity.Mode[] values = LaserTelemeterBlockEntity.Mode.values();
     this.mode = values[(this.mode.ordinal() + 1) % values.length];
@@ -168,6 +206,10 @@ public class LaserTelemeterScreen extends Screen {
     this.actionButton.setMessage(new TranslatableText("gui.build_utils.laser_telemeter.action_button.%s.label".formatted(this.mode.name().toLowerCase())));
     this.actionButton.visible = this.mode != LaserTelemeterBlockEntity.Mode.BOX;
     this.previewPasteButton.visible = this.mode == LaserTelemeterBlockEntity.Mode.PASTE;
+    this.rotationButton.setMessage(new TranslatableText("gui.build_utils.laser_telemeter.rotation_button.%s.label".formatted(this.rotation.name().toLowerCase())));
+    this.rotationButton.visible = this.mode == LaserTelemeterBlockEntity.Mode.PASTE;
+    this.mirrorButton.setMessage(this.mirror.getName());
+    this.mirrorButton.visible = this.mode == LaserTelemeterBlockEntity.Mode.PASTE;
   }
 
   /**
@@ -193,8 +235,10 @@ public class LaserTelemeterScreen extends Screen {
     this.blockEntity.setMode(this.mode);
     this.blockEntity.setFillerBlockState(fillerBlockState);
     this.blockEntity.setStructureName(structureName.equals("") ? null : structureName);
+    this.blockEntity.setRotation(this.rotation);
+    this.blockEntity.setMirror(this.mirror);
     C2SPacketFactory.sendPacket(
-        new LaserTelemeterPacket(this.blockEntity.getPos(), offset, size, this.mode, fillerBlockState, structureName, performAction, previewPaste));
+        new LaserTelemeterPacket(this.blockEntity.getPos(), offset, size, this.mode, fillerBlockState, structureName, this.rotation, this.mirror, performAction, previewPaste));
     //noinspection ConstantConditions
     this.client.setScreen(null);
   }
