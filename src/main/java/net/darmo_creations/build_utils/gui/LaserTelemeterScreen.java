@@ -35,8 +35,9 @@ public class LaserTelemeterScreen extends Screen {
   private TextFieldWidget zOffsetTextField;
   private TextFieldWidget fillerBlockStateTextField;
   private TextFieldWidget fileNameTextField;
-  private ButtonWidget actionButton;
   private ButtonWidget modeButton;
+  private ButtonWidget actionButton;
+  private ButtonWidget previewPasteButton;
 
   // Data
   private final LaserTelemeterBlockEntity blockEntity;
@@ -44,7 +45,7 @@ public class LaserTelemeterScreen extends Screen {
   private final Vec3i offset;
   private LaserTelemeterBlockEntity.Mode mode;
   private final BlockState fillerBlockState;
-  private final String fileName;
+  private final String structureName;
 
   /**
    * Creates a GUI for the given tile entity.
@@ -58,7 +59,7 @@ public class LaserTelemeterScreen extends Screen {
     this.offset = blockEntity.getOffset();
     this.mode = blockEntity.getMode();
     this.fillerBlockState = blockEntity.getFillerBlockState();
-    this.fileName = blockEntity.getFileName();
+    this.structureName = blockEntity.getStructureName();
   }
 
   @Override
@@ -105,9 +106,8 @@ public class LaserTelemeterScreen extends Screen {
     this.fileNameTextField = this.addDrawableChild(
         new TextFieldWidget(this.client.textRenderer, middle - (3 * btnW) / 2, y, 3 * btnW, BUTTON_HEIGHT, null));
     this.fileNameTextField.setMaxLength(50);
-    this.fileNameTextField.setTextPredicate(text -> "".equals(text) || LaserTelemeterBlockEntity.FILE_NAME_PATTERN.matcher(text).find());
-    if (this.fileName != null) {
-      this.fileNameTextField.setText(this.fileName);
+    if (this.structureName != null) {
+      this.fileNameTextField.setText(this.structureName);
     }
 
     y += 2 * BUTTON_HEIGHT;
@@ -123,7 +123,14 @@ public class LaserTelemeterScreen extends Screen {
         middle - BUTTON_WIDTH / 2, y,
         BUTTON_WIDTH, BUTTON_HEIGHT,
         new LiteralText(""), // Set by setMode() method
-        b -> this.onDone(true)
+        b -> this.onDone(true, false)
+    ));
+
+    this.previewPasteButton = this.addDrawableChild(new ButtonWidget(
+        middle + btnW / 2 + (btnW - BUTTON_WIDTH / 2), y,
+        BUTTON_WIDTH / 2, BUTTON_HEIGHT,
+        new TranslatableText("gui.build_utils.laser_telemeter.preview_paste_button.label"),
+        b -> this.onDone(true, true)
     ));
 
     y += BUTTON_HEIGHT + 2 * MARGIN;
@@ -132,7 +139,7 @@ public class LaserTelemeterScreen extends Screen {
         leftButtonX, y,
         BUTTON_WIDTH, BUTTON_HEIGHT,
         new TranslatableText("gui.done"),
-        b -> this.onDone(false)
+        b -> this.onDone(false, false)
     ));
 
     this.addDrawableChild(new ButtonWidget(
@@ -160,17 +167,19 @@ public class LaserTelemeterScreen extends Screen {
     this.modeButton.setMessage(new TranslatableText("gui.build_utils.laser_telemeter.mode_button.%s.label".formatted(this.mode.name().toLowerCase())));
     this.actionButton.setMessage(new TranslatableText("gui.build_utils.laser_telemeter.action_button.%s.label".formatted(this.mode.name().toLowerCase())));
     this.actionButton.visible = this.mode != LaserTelemeterBlockEntity.Mode.BOX;
+    this.previewPasteButton.visible = this.mode == LaserTelemeterBlockEntity.Mode.PASTE;
   }
 
   /**
    * Update client-side block entity and send update packet to server.
    *
    * @param performAction Whether to perform the selected action from the server.
+   * @param previewPaste  Whether to only update the box when in PASTE mode.
    */
-  private void onDone(final boolean performAction) {
+  private void onDone(final boolean performAction, boolean previewPaste) {
     Vec3i size = new Vec3i(getValue(this.lengthXTextField), getValue(this.lengthYTextField), getValue(this.lengthZTextField));
     BlockPos offset = new BlockPos(getValue(this.xOffsetTextField), getValue(this.yOffsetTextField), getValue(this.zOffsetTextField));
-    String fileName = this.fileNameTextField.getText().strip();
+    String structureName = this.fileNameTextField.getText().strip();
     BlockState fillerBlockState = Utils.stringToBlockState(this.fillerBlockStateTextField.getText());
     if (fillerBlockState == null) {
       if (this.fillerBlockState == null) {
@@ -183,9 +192,9 @@ public class LaserTelemeterScreen extends Screen {
     this.blockEntity.setOffset(offset);
     this.blockEntity.setMode(this.mode);
     this.blockEntity.setFillerBlockState(fillerBlockState);
-    this.blockEntity.setFileName(fileName.equals("") ? null : fileName);
+    this.blockEntity.setStructureName(structureName.equals("") ? null : structureName);
     ClientPlayNetworking.send(C2SPacketFactory.LASER_TELEMETER_DATA_PACKET_ID,
-        C2SPacketFactory.createLaserTelemeterBEPacketByteBuffer(this.blockEntity.getPos(), offset, size, this.mode, fillerBlockState, fileName, performAction));
+        C2SPacketFactory.createLaserTelemeterBEPacketByteBuffer(this.blockEntity.getPos(), offset, size, this.mode, fillerBlockState, structureName, performAction, previewPaste));
     //noinspection ConstantConditions
     this.client.setScreen(null);
   }

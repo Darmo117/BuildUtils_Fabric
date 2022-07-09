@@ -3,6 +3,7 @@ package net.darmo_creations.build_utils.block_entities;
 import net.darmo_creations.build_utils.Utils;
 import net.darmo_creations.build_utils.blocks.LaserTelemeterBlock;
 import net.darmo_creations.build_utils.blocks.ModBlocks;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
@@ -14,16 +15,17 @@ import net.minecraft.network.Packet;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.structure.Structure;
+import net.minecraft.structure.StructureManager;
+import net.minecraft.structure.StructurePlacementData;
 import net.minecraft.text.Style;
 import net.minecraft.text.TranslatableText;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.Pair;
-import net.minecraft.util.Util;
+import net.minecraft.util.*;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3i;
 
 import java.util.Objects;
-import java.util.regex.Pattern;
+import java.util.Optional;
 
 /**
  * Block entity for laser telemeter.
@@ -34,21 +36,19 @@ import java.util.regex.Pattern;
  * @see ModBlocks#LASER_TELEMETER
  */
 public class LaserTelemeterBlockEntity extends BlockEntity {
-  public static final Pattern FILE_NAME_PATTERN = Pattern.compile("^[\\w.-]+$");
-
   private static final String SIZE_TAG_KEY = "Size";
   private static final String OFFSET_TAG_KEY = "Offset";
   private static final String FILLER_BLOCK_STATE_KEY = "FillerBlockState";
-  private static final String FILE_NAME_KEY = "FileName";
+  private static final String STRUCTURE_NAME_KEY = "StructureName";
   private static final String MODE_KEY = "Mode";
 
   private Vec3i size;
   private Vec3i offset;
   private Mode mode;
   private BlockState fillerBlockState;
-  private String fileName;
+  private String structureName;
 
-  public LaserTelemeterBlockEntity(BlockPos pos, BlockState state) {
+  public LaserTelemeterBlockEntity(final BlockPos pos, final BlockState state) {
     super(ModBlockEntities.LASER_TELEMETER, pos, state);
     this.setSize(Vec3i.ZERO);
     this.setOffset(Vec3i.ZERO);
@@ -69,16 +69,20 @@ public class LaserTelemeterBlockEntity extends BlockEntity {
     return this.size;
   }
 
-  public void setSize(Vec3i size) {
-    this.size = Objects.requireNonNull(size);
+  public void setSize(final Vec3i size) {
+    this.size = this.clamp(size);
     this.markDirty();
+  }
+
+  private Vec3i clamp(final Vec3i vec3i) {
+    return new Vec3i(Math.max(0, vec3i.getX()), Math.max(0, vec3i.getY()), Math.max(0, vec3i.getZ()));
   }
 
   public Vec3i getOffset() {
     return this.offset;
   }
 
-  public void setOffset(Vec3i offset) {
+  public void setOffset(final Vec3i offset) {
     this.offset = Objects.requireNonNull(offset);
     this.markDirty();
   }
@@ -87,30 +91,27 @@ public class LaserTelemeterBlockEntity extends BlockEntity {
     return this.fillerBlockState;
   }
 
-  public void setFillerBlockState(BlockState fillerBlockState) {
+  public void setFillerBlockState(final BlockState fillerBlockState) {
     this.fillerBlockState = Objects.requireNonNull(fillerBlockState);
     this.markDirty();
   }
 
-  public String getFileName() {
-    return this.fileName;
+  public String getStructureName() {
+    return this.structureName;
   }
 
-  public void setFileName(String fileName) {
-    if (fileName != null && !FILE_NAME_PATTERN.matcher(fileName).find()) {
-      throw new IllegalArgumentException("invalid file name: " + fileName);
-    }
-    this.fileName = fileName;
+  public void setStructureName(String structureName) {
+    this.structureName = structureName;
     this.markDirty();
   }
 
-  public void performAction() {
+  public void performAction(boolean previewPaste) {
     if (this.world instanceof ServerWorld w) {
-      if (this.size.getX() != 0 && this.size.getY() != 0 && this.size.getZ() != 0) {
+      if (this.mode == Mode.PASTE || this.size.getX() != 0 && this.size.getY() != 0 && this.size.getZ() != 0) {
         switch (this.mode) {
           case FILL -> this.fillArea(w);
           case COPY -> this.copyArea(w);
-          case PASTE -> this.pasteStructure(w);
+          case PASTE -> this.pasteStructure(w, previewPaste);
         }
       } else {
         w.getServer().getPlayerManager().broadcast(
@@ -122,8 +123,8 @@ public class LaserTelemeterBlockEntity extends BlockEntity {
 
   private void fillArea(ServerWorld world) {
     if (this.fillerBlockState != null) {
-      Pair<BlockPos, BlockPos> corners = this.getAreaCorners();
-      int blocksNb = Utils.fill(corners.getLeft(), corners.getRight(), this.fillerBlockState, world);
+      BlockPos pos = this.getPos().add(this.offset);
+      int blocksNb = Utils.fill(pos, pos.add(this.size).add(-1, -1, -1), this.fillerBlockState, world);
       world.getServer().getPlayerManager().broadcast(
           new TranslatableText("block.build_utils.laser_telemeter.feedback.total_filled_volume", blocksNb), MessageType.CHAT, Util.NIL_UUID);
     } else {
@@ -134,11 +135,21 @@ public class LaserTelemeterBlockEntity extends BlockEntity {
   }
 
   private void copyArea(final ServerWorld world) {
-    if (this.fileName != null) {
-      Pair<BlockPos, BlockPos> corners = this.getAreaCorners();
-      // TODO copy
+    if (this.structureName != null) {
+      StructureManager structureManager = world.getStructureManager();
+      Structure structure;
+      try {
+        structure = structureManager.getStructureOrBlank(new Identifier(this.structureName));
+        structure.saveFromWorld(world, this.getPos().add(this.offset), this.size, false, Blocks.STRUCTURE_VOID);
+        structureManager.saveStructure(new Identifier(this.structureName));
+      } catch (InvalidIdentifierException invalidIdentifierException) {
+        world.getServer().getPlayerManager().broadcast(
+            new TranslatableText("block.build_utils.laser_telemeter.error.invalid_structure_name", this.structureName)
+                .setStyle(Style.EMPTY.withColor(Formatting.RED)), MessageType.CHAT, Util.NIL_UUID);
+        return;
+      }
       world.getServer().getPlayerManager().broadcast(
-          new TranslatableText("block.build_utils.laser_telemeter.feedback.copy_successfull", this.fileName), MessageType.CHAT, Util.NIL_UUID);
+          new TranslatableText("block.build_utils.laser_telemeter.feedback.copy_successfull", this.structureName), MessageType.CHAT, Util.NIL_UUID);
     } else {
       world.getServer().getPlayerManager().broadcast(
           new TranslatableText("block.build_utils.laser_telemeter.error.cannot_copy_area")
@@ -146,11 +157,34 @@ public class LaserTelemeterBlockEntity extends BlockEntity {
     }
   }
 
-  private void pasteStructure(ServerWorld world) {
-    if (this.fileName != null) {
-      // TODO paste
-      world.getServer().getPlayerManager().broadcast(
-          new TranslatableText("block.build_utils.laser_telemeter.feedback.paste_successfull", this.fileName), MessageType.CHAT, Util.NIL_UUID);
+  private void pasteStructure(ServerWorld world, boolean preview) {
+    if (this.structureName != null) {
+      Optional<Structure> optional;
+      StructureManager structureManager = world.getStructureManager();
+      try {
+        optional = structureManager.getStructure(new Identifier(this.structureName));
+      } catch (InvalidIdentifierException invalidIdentifierException) {
+        world.getServer().getPlayerManager().broadcast(
+            new TranslatableText("block.build_utils.laser_telemeter.error.invalid_structure_name", this.structureName)
+                .setStyle(Style.EMPTY.withColor(Formatting.RED)), MessageType.CHAT, Util.NIL_UUID);
+        return;
+      }
+      if (optional.isEmpty()) {
+        world.getServer().getPlayerManager().broadcast(
+            new TranslatableText("block.build_utils.laser_telemeter.error.unknown_structure_name", this.structureName)
+                .setStyle(Style.EMPTY.withColor(Formatting.RED)), MessageType.CHAT, Util.NIL_UUID);
+        return;
+      }
+      Structure structure = optional.get();
+      this.updateSizeFromStructure(world, structure);
+      if (!preview) {
+        this.place(world, structure);
+        world.getServer().getPlayerManager().broadcast(
+            new TranslatableText("block.build_utils.laser_telemeter.feedback.paste_successfull", this.structureName), MessageType.CHAT, Util.NIL_UUID);
+      } else {
+        world.getServer().getPlayerManager().broadcast(
+            new TranslatableText("block.build_utils.laser_telemeter.feedback.area_prepared", this.structureName), MessageType.CHAT, Util.NIL_UUID);
+      }
     } else {
       world.getServer().getPlayerManager().broadcast(
           new TranslatableText("block.build_utils.laser_telemeter.error.cannot_paste_structure")
@@ -158,16 +192,20 @@ public class LaserTelemeterBlockEntity extends BlockEntity {
     }
   }
 
-  private Pair<BlockPos, BlockPos> getAreaCorners() {
-    int xo1 = this.size.getX() > 0 ? 0 : -1;
-    int yo1 = this.size.getY() > 0 ? 0 : -1;
-    int zo1 = this.size.getZ() > 0 ? 0 : -1;
-    int xo2 = this.size.getX() < 0 ? 0 : -1;
-    int yo2 = this.size.getY() < 0 ? 0 : -1;
-    int zo2 = this.size.getZ() < 0 ? 0 : -1;
-    BlockPos pos1 = this.pos.add(this.offset).add(xo1, yo1, zo1);
-    BlockPos pos2 = this.pos.add(this.offset).add(this.size).add(xo2, yo2, zo2);
-    return new Pair<>(pos1, pos2);
+  private void updateSizeFromStructure(ServerWorld world, final Structure structure) {
+    this.size = structure.getSize();
+    // Update data on client side to draw correct box
+    world.updateListeners(this.getPos(), this.getCachedState(), this.getCachedState(), Block.NOTIFY_LISTENERS);
+    this.markDirty();
+  }
+
+  private void place(ServerWorld world, final Structure structure) {
+    StructurePlacementData structurePlacementData = new StructurePlacementData()
+        .setMirror(BlockMirror.NONE)
+        .setRotation(BlockRotation.NONE)
+        .setIgnoreEntities(true);
+    BlockPos pos = this.getPos().add(this.offset);
+    structure.place(world, pos, pos, structurePlacementData, world.getServer().getOverworld().getRandom(), Block.NOTIFY_LISTENERS);
   }
 
   @Override
@@ -178,8 +216,8 @@ public class LaserTelemeterBlockEntity extends BlockEntity {
     if (this.fillerBlockState != null) {
       nbt.put(FILLER_BLOCK_STATE_KEY, NbtHelper.fromBlockState(this.fillerBlockState));
     }
-    if (this.fileName != null) {
-      nbt.putString(FILE_NAME_KEY, this.fileName);
+    if (this.structureName != null) {
+      nbt.putString(STRUCTURE_NAME_KEY, this.structureName);
     }
     nbt.putInt(MODE_KEY, this.mode.ordinal());
   }
@@ -194,10 +232,10 @@ public class LaserTelemeterBlockEntity extends BlockEntity {
     } else {
       this.fillerBlockState = null;
     }
-    if (nbt.contains(FILE_NAME_KEY, NbtElement.STRING_TYPE)) {
-      this.fileName = nbt.getString(FILE_NAME_KEY);
+    if (nbt.contains(STRUCTURE_NAME_KEY, NbtElement.STRING_TYPE)) {
+      this.structureName = nbt.getString(STRUCTURE_NAME_KEY);
     } else {
-      this.fileName = null;
+      this.structureName = null;
     }
     this.mode = Mode.values()[nbt.getInt(MODE_KEY)];
   }

@@ -25,15 +25,17 @@ public class C2SPacketFactory {
    *
    * @see ServerPacketHandlers#handleLaserTelemeterBEPacket(MinecraftServer, ServerPlayerEntity, PacketByteBuf)
    */
-  public static PacketByteBuf createLaserTelemeterBEPacketByteBuffer(final BlockPos pos, Vec3i offset, Vec3i size, LaserTelemeterBlockEntity.Mode mode, BlockState fillerBlockState, String fileName, boolean performAction) {
+  // TODO wrap into a "packet" object
+  public static PacketByteBuf createLaserTelemeterBEPacketByteBuffer(final BlockPos pos, Vec3i offset, Vec3i size, LaserTelemeterBlockEntity.Mode mode, BlockState fillerBlockState, String structureName, boolean performAction, boolean previewPaste) {
     PacketByteBuf buf = new PacketByteBuf(Unpooled.buffer());
     buf.writeBlockPos(pos);
     PacketBufUtil.writeVec3i(buf, offset);
     PacketBufUtil.writeVec3i(buf, size);
     buf.writeInt(mode.ordinal());
     buf.writeString(Utils.blockStateToString(fillerBlockState));
-    buf.writeString(fileName);
+    buf.writeString(structureName);
     buf.writeBoolean(performAction);
+    buf.writeBoolean(previewPaste);
     return buf;
   }
 }

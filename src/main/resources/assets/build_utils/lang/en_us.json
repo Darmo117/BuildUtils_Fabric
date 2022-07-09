@@ -3,10 +3,13 @@
 
   "block.build_utils.laser_telemeter": "Laser Telemeter",
   "block.build_utils.laser_telemeter.feedback.total_filled_volume": "Successfully filled %d block(s)",
-  "block.build_utils.laser_telemeter.feedback.copy_successfull": "Area copied to data/%s.struct",
-  "block.build_utils.laser_telemeter.feedback.paste_successfull": "Copied structure from data/%s.struct",
+  "block.build_utils.laser_telemeter.feedback.copy_successfull": "Saved structure %s",
+  "block.build_utils.laser_telemeter.feedback.area_prepared": "Prepared area for structure %s",
+  "block.build_utils.laser_telemeter.feedback.paste_successfull": "Placed structure %s",
   "block.build_utils.laser_telemeter.error.cannot_fill_area": "Cannot fill area!",
   "block.build_utils.laser_telemeter.error.cannot_copy_area": "Cannot copy area!",
+  "block.build_utils.laser_telemeter.error.invalid_structure_name": "Invalid structure name: %s",
+  "block.build_utils.laser_telemeter.error.unknown_structure_name": "Structure %s does not exist!",
   "block.build_utils.laser_telemeter.error.cannot_paste_structure": "Cannot paste structure!",
   "block.build_utils.laser_telemeter.error.cannot_perform_action": "Cannot perform action!",
 
@@ -37,6 +40,7 @@
   "gui.build_utils.laser_telemeter.z_offset_field.label": "Z Offset",
   "gui.build_utils.laser_telemeter.filler_block_state.label": "Filler Block State",
   "gui.build_utils.laser_telemeter.file_name.label": "File Name",
+  "gui.build_utils.laser_telemeter.preview_paste_button.label": "Preview",
   "gui.build_utils.laser_telemeter.mode_button.box.label": "Box",
   "gui.build_utils.laser_telemeter.mode_button.fill.label": "Fill",
   "gui.build_utils.laser_telemeter.mode_button.copy.label": "Copy",
