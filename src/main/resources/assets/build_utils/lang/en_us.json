@@ -39,7 +39,7 @@
   "gui.build_utils.laser_telemeter.y_offset_field.label": "Y Offset",
   "gui.build_utils.laser_telemeter.z_offset_field.label": "Z Offset",
   "gui.build_utils.laser_telemeter.filler_block_state.label": "Filler Block State",
-  "gui.build_utils.laser_telemeter.file_name.label": "File Name",
+  "gui.build_utils.laser_telemeter.file_name.label": "Structure Name",
   "gui.build_utils.laser_telemeter.preview_paste_button.label": "Preview",
   "gui.build_utils.laser_telemeter.mode_button.box.label": "Box",
   "gui.build_utils.laser_telemeter.mode_button.fill.label": "Fill",
