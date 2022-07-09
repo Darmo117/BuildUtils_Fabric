@@ -4,10 +4,10 @@ import net.darmo_creations.build_utils.block_entities.ModBlockEntities;
 import net.darmo_creations.build_utils.blocks.ModBlocks;
 import net.darmo_creations.build_utils.items.ModItems;
 import net.darmo_creations.build_utils.network.C2SPacketFactory;
-import net.darmo_creations.build_utils.network.ServerPacketHandlers;
+import net.darmo_creations.build_utils.network.packets.LaserTelemeterPacket;
+import net.darmo_creations.build_utils.network.PacketRegistry;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.itemgroup.FabricItemGroupBuilder;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.Identifier;
@@ -32,14 +32,17 @@ public class BuildUtils implements ModInitializer {
     ModBlocks.init();
     ModItems.init();
     ModBlockEntities.init();
-    this.registerServerPacketHandlers();
+    this.registerPackets();
   }
 
   /**
-   * Registers all server-side packet handlers.
+   * Registers all packets.
    */
-  private void registerServerPacketHandlers() {
-    ServerPlayNetworking.registerGlobalReceiver(C2SPacketFactory.LASER_TELEMETER_DATA_PACKET_ID,
-        (server, player, handler, buf, responseSender) -> ServerPacketHandlers.handleLaserTelemeterBEPacket(server, player, buf));
+  private void registerPackets() {
+    PacketRegistry.registerPacket(
+        C2SPacketFactory.LASER_TELEMETER_DATA_PACKET_ID,
+        LaserTelemeterPacket.class,
+        new LaserTelemeterPacket.ServerHandler()
+    );
   }
 }

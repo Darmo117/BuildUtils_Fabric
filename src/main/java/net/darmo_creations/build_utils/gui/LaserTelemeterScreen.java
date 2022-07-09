@@ -3,7 +3,7 @@ package net.darmo_creations.build_utils.gui;
 import net.darmo_creations.build_utils.Utils;
 import net.darmo_creations.build_utils.block_entities.LaserTelemeterBlockEntity;
 import net.darmo_creations.build_utils.network.C2SPacketFactory;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.darmo_creations.build_utils.network.packets.LaserTelemeterPacket;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.font.TextRenderer;
@@ -193,8 +193,8 @@ public class LaserTelemeterScreen extends Screen {
     this.blockEntity.setMode(this.mode);
     this.blockEntity.setFillerBlockState(fillerBlockState);
     this.blockEntity.setStructureName(structureName.equals("") ? null : structureName);
-    ClientPlayNetworking.send(C2SPacketFactory.LASER_TELEMETER_DATA_PACKET_ID,
-        C2SPacketFactory.createLaserTelemeterBEPacketByteBuffer(this.blockEntity.getPos(), offset, size, this.mode, fillerBlockState, structureName, performAction, previewPaste));
+    C2SPacketFactory.sendPacket(
+        new LaserTelemeterPacket(this.blockEntity.getPos(), offset, size, this.mode, fillerBlockState, structureName, performAction, previewPaste));
     //noinspection ConstantConditions
     this.client.setScreen(null);
   }
