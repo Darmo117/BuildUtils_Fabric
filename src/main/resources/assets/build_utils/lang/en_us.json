@@ -1,6 +1,9 @@
 {
   "itemGroup.build_utils.general": "Build Utils",
 
+  "category.build_utils": "Build Utils",
+  "key.build_utils.toggle_night_vision": "Toggle Night Vision",
+
   "block.build_utils.laser_telemeter": "Laser Telemeter",
   "block.build_utils.laser_telemeter.feedback.total_filled_volume": "Successfully filled %d block(s)",
   "block.build_utils.laser_telemeter.feedback.copy_successfull": "Saved structure %s",

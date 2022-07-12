@@ -4,8 +4,9 @@ import net.darmo_creations.build_utils.block_entities.ModBlockEntities;
 import net.darmo_creations.build_utils.blocks.ModBlocks;
 import net.darmo_creations.build_utils.items.ModItems;
 import net.darmo_creations.build_utils.network.C2SPacketFactory;
-import net.darmo_creations.build_utils.network.packets.LaserTelemeterPacket;
 import net.darmo_creations.build_utils.network.PacketRegistry;
+import net.darmo_creations.build_utils.network.packets.LaserTelemeterPacket;
+import net.darmo_creations.build_utils.network.packets.ToggleNightVisionPacket;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.itemgroup.FabricItemGroupBuilder;
 import net.minecraft.item.ItemGroup;
@@ -43,6 +44,11 @@ public class BuildUtils implements ModInitializer {
         C2SPacketFactory.LASER_TELEMETER_DATA_PACKET_ID,
         LaserTelemeterPacket.class,
         new LaserTelemeterPacket.ServerHandler()
+    );
+    PacketRegistry.registerPacket(
+        C2SPacketFactory.TOGGLE_NIGHT_VISION_PACKET_ID,
+        ToggleNightVisionPacket.class,
+        new ToggleNightVisionPacket.ServerHandler()
     );
   }
 }

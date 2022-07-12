@@ -13,6 +13,8 @@ import java.util.Optional;
 public class C2SPacketFactory {
   public static final Identifier LASER_TELEMETER_DATA_PACKET_ID =
       new Identifier(BuildUtils.MOD_ID, "laser_telemeter_data_packet");
+  public static final Identifier TOGGLE_NIGHT_VISION_PACKET_ID =
+      new Identifier(BuildUtils.MOD_ID, "toggle_night_vision_packet");
 
   /**
    * Sends a packet to the server.
