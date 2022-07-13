@@ -37,7 +37,7 @@ public class BuildUtils implements ModInitializer {
   }
 
   /**
-   * Registers all packets.
+   * Registers all packets and associated handlers.
    */
   private void registerPackets() {
     PacketRegistry.registerPacket(
