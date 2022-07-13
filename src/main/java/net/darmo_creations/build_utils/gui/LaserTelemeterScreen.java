@@ -17,6 +17,7 @@ import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3i;
+import org.lwjgl.glfw.GLFW;
 
 /**
  * Screen for the laser telemeter block.
@@ -257,6 +258,16 @@ public class LaserTelemeterScreen extends Screen {
   private void onCancel() {
     //noinspection ConstantConditions
     this.client.setScreen(null);
+  }
+
+  @Override
+  public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    if (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) {
+      this.onDone(false, false);
+      return true;
+    } else {
+      return super.keyPressed(keyCode, scanCode, modifiers);
+    }
   }
 
   @Override
